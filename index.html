@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Interrogative Pronouns Matching Game</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .column {
+            flex: 1;
+        }
+        .column-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .word-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .word {
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            position: relative;
+        }
+        .word:hover {
+            background-color: #e3f2fd;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .word.selected {
+            background-color: #bbdefb;
+            border-color: #1976d2;
+        }
+        .word.correct {
+            background-color: #c8e6c9;
+            border-color: #4caf50;
+        }
+        .sound-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #3498db;
+            font-size: 1.2rem;
+            display: none;
+        }
+        .french-word .sound-icon {
+            display: block;
+        }
+        .score-container {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            color: #2c3e50;
+        }
+        .completed-message {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background-color: #4caf50;
+            color: white;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .completed-message.visible {
+            opacity: 1;
+        }
+        .instruction {
+            margin: 10px 0 20px;
+            color: #555;
+            text-align: center;
+            font-style: italic;
+        }
+        /* Modified media query to keep columns side by side */
+        @media (max-width: 600px) {
+            .game-container {
+                gap: 15px; /* Reduce gap on smaller screens */
+            }
+            
+            h1 {
+                font-size: 1.5rem; /* Smaller heading on mobile */
+            }
+            
+            .column-header {
+                font-size: 1.2rem; /* Smaller column headers */
+            }
+            
+            .word {
+                padding: 10px 25px 10px 10px; /* Smaller padding with room for icon */
+                font-size: 0.9rem; /* Smaller font */
+            }
+        }
+        
+        /* Additional media query for very small screens */
+        @media (max-width: 400px) {
+            .game-container {
+                gap: 10px; /* Further reduce gap */
+            }
+            
+            .word {
+                padding: 8px 25px 8px 5px; /* Minimal padding with room for icon */
+                font-size: 0.8rem; /* Even smaller font */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>French Interrogative Pronouns Matching Game</h1>
+    
+    <p class="instruction">Click on the sound icon or the French word to hear pronunciation</p>
+    
+    <div class="game-container">
+        <div class="column">
+            <div class="column-header">English</div>
+            <div id="english-words" class="word-list"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">French</div>
+            <div id="french-words" class="word-list"></div>
+        </div>
+    </div>
+    
+    <div class="score-container">
+        <div id="score">Pairs Matched: 0 / 6</div>
+    </div>
+    
+    <div id="completed-message" class="completed-message">
+        Great job! Loading new words...
+    </div>
+
+    <script>
+        // Word pairs database (English -> French) with interrogative pronouns and question words
+        const wordPairs = [
+            { english: "who", french: "qui" },
+            { english: "what", french: "que" },
+            { english: "what (formal)", french: "quoi" },
+            { english: "which", french: "lequel" },
+            { english: "which (feminine)", french: "laquelle" },
+            { english: "which (plural)", french: "lesquels" },
+            { english: "which (feminine plural)", french: "lesquelles" },
+            { english: "whose", french: "à qui" },
+            { english: "why", french: "pourquoi" },
+            { english: "how", french: "comment" },
+            { english: "how many", french: "combien" },
+            { english: "when", french: "quand" },
+            { english: "where", french: "où" },
+            { english: "where to", french: "où à" },
+            { english: "where from", french: "d'où" },
+            { english: "who is it", french: "qui est-ce" },
+            { english: "what is it", french: "qu'est-ce que c'est" },
+            { english: "what is that", french: "qu'est-ce que" },
+            { english: "with whom", french: "avec qui" },
+            { english: "for whom", french: "pour qui" },
+            { english: "which one", french: "lequel" },
+            { english: "at what time", french: "à quelle heure" },
+            { english: "in what way", french: "de quelle manière" },
+            { english: "for what reason", french: "pour quelle raison" },
+            { english: "since when", french: "depuis quand" },
+            { english: "until when", french: "jusqu'à quand" },
+            { english: "how much", french: "combien" },
+            { english: "how long", french: "combien de temps" },
+            { english: "how far", french: "à quelle distance" },
+            { english: "how often", french: "à quelle fréquence" }
+        ];
+
+        // Game state
+        let currentPairs = [];
+        let selectedEnglishWord = null;
+        let selectedFrenchWord = null;
+        let matchedPairs = 0;
+        let gameActive = true;
+        
+        // Speech synthesis
+        const speechSynthesis = window.speechSynthesis;
+        let frenchVoice = null;
+
+        // Initialize speech synthesis
+        function initSpeech() {
+            // Wait for voices to be loaded
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.addEventListener('voiceschanged', setFrenchVoice);
+            } else {
+                setFrenchVoice();
+            }
+        }
+        
+        // Set French voice
+        function setFrenchVoice() {
+            const voices = speechSynthesis.getVoices();
+            
+            // Try to find a French voice
+            frenchVoice = voices.find(voice => voice.lang.includes('fr')) ||
+                         voices.find(voice => voice.lang.includes('FR')) ||
+                         voices[0]; // Fallback to first available voice
+        }
+        
+        // Function to speak text in French
+        function speakFrench(text) {
+            if (!speechSynthesis) {
+                console.log("Speech synthesis not supported");
+                return;
+            }
+            
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            
+            if (frenchVoice) {
+                utterance.voice = frenchVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        // DOM elements
+        const englishWordsContainer = document.getElementById('english-words');
+        const frenchWordsContainer = document.getElementById('french-words');
+        const scoreDisplay = document.getElementById('score');
+        const completedMessage = document.getElementById('completed-message');
+
+        // Function to shuffle an array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Function to select random word pairs
+        function selectRandomPairs(count) {
+            const shuffled = shuffleArray([...wordPairs]);
+            return shuffled.slice(0, count);
+        }
+
+        // Function to handle word selection
+        function handleWordClick(word, language) {
+            if (!gameActive) return;
+
+            // Play audio if it's a French word
+            if (language === 'french') {
+                speakFrench(word.textContent);
+            }
+
+            if (language === 'english') {
+                // Deselect previously selected English word if any
+                if (selectedEnglishWord) {
+                    selectedEnglishWord.classList.remove('selected');
+                }
+                
+                // Select the clicked word
+                word.classList.add('selected');
+                selectedEnglishWord = word;
+                
+                // Check for match if a French word is already selected
+                if (selectedFrenchWord) {
+                    checkForMatch();
+                }
+            } else {
+                // Deselect previously selected French word if any
+                if (selectedFrenchWord) {
+                    selectedFrenchWord.classList.remove('selected');
+                }
+                
+                // Select the clicked word
+                word.classList.add('selected');
+                selectedFrenchWord = word;
+                
+                // Check for match if an English word is already selected
+                if (selectedEnglishWord) {
+                    checkForMatch();
+                }
+            }
+        }
+        
+        // Function to handle sound icon click
+        function handleSoundClick(event, text) {
+            event.stopPropagation(); // Prevent triggering the word click
+            speakFrench(text);
+        }
+
+        // Function to check if selected words match
+        function checkForMatch() {
+            const englishWord = selectedEnglishWord.textContent;
+            const frenchWord = selectedFrenchWord.textContent;
+            
+            // Find if there's a match in current pairs
+            const match = currentPairs.find(pair => 
+                pair.english === englishWord && pair.french === frenchWord
+            );
+            
+            if (match) {
+                // Words match
+                selectedEnglishWord.classList.add('correct');
+                selectedFrenchWord.classList.add('correct');
+                
+                // Play a success sound or the French word again
+                speakFrench(frenchWord);
+                
+                // Remove the matched words after a short delay
+                setTimeout(() => {
+                    selectedEnglishWord.style.display = 'none';
+                    selectedFrenchWord.style.display = 'none';
+                    
+                    // Reset selection
+                    selectedEnglishWord = null;
+                    selectedFrenchWord = null;
+                    
+                    // Update score
+                    matchedPairs++;
+                    scoreDisplay.textContent = `Pairs Matched: ${matchedPairs} / 6`;
+                    
+                    // Check if all pairs are matched
+                    if (matchedPairs === 6) {
+                        gameCompleted();
+                    }
+                }, 700);
+            } else {
+                // Words don't match, deselect after a short delay
+                setTimeout(() => {
+                    selectedEnglishWord.classList.remove('selected');
+                    selectedFrenchWord.classList.remove('selected');
+                    selectedEnglishWord = null;
+                    selectedFrenchWord = null;
+                }, 800);
+            }
+        }
+
+        // Function to handle game completion
+        function gameCompleted() {
+            gameActive = false;
+            completedMessage.classList.add('visible');
+            
+            // Load new words after a delay
+            setTimeout(() => {
+                completedMessage.classList.remove('visible');
+                resetGame();
+            }, 2000);
+        }
+
+        // Function to reset the game with new words
+        function resetGame() {
+            // Clear containers
+            englishWordsContainer.innerHTML = '';
+            frenchWordsContainer.innerHTML = '';
+            
+            // Reset game state
+            matchedPairs = 0;
+            selectedEnglishWord = null;
+            selectedFrenchWord = null;
+            gameActive = true;
+            
+            // Update score display
+            scoreDisplay.textContent = `Pairs Matched: 0 / 6`;
+            
+            // Initialize game with new words
+            initializeGame();
+        }
+
+        // Function to initialize the game
+        function initializeGame() {
+            // Select 6 random word pairs
+            currentPairs = selectRandomPairs(6);
+            
+            // Create and shuffle arrays of English and French words
+            const englishWords = currentPairs.map(pair => pair.english);
+            const frenchWords = currentPairs.map(pair => pair.french);
+            
+            shuffleArray(englishWords);
+            shuffleArray(frenchWords);
+            
+            // Create word elements and add to containers
+            englishWords.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word';
+                wordElement.textContent = word;
+                wordElement.addEventListener('click', () => handleWordClick(wordElement, 'english'));
+                englishWordsContainer.appendChild(wordElement);
+            });
+            
+            frenchWords.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word french-word';
+                wordElement.textContent = word;
+                
+                // Add sound icon
+                const soundIcon = document.createElement('span');
+                soundIcon.className = 'sound-icon';
+                soundIcon.innerHTML = '🔊';
+                soundIcon.addEventListener('click', (e) => handleSoundClick(e, word));
+                wordElement.appendChild(soundIcon);
+                
+                wordElement.addEventListener('click', () => handleWordClick(wordElement, 'french'));
+                frenchWordsContainer.appendChild(wordElement);
+            });
+        }
+
+        // Initialize speech synthesis 
+        initSpeech();
+        
+        // Initialize the game on page load
+        initializeGame();
+    </script>
+</body>
+</html>
